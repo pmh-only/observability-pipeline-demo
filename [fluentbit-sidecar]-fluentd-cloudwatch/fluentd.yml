@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd
+  namespace: default
+  labels:
+    app: fluentd
+spec:
+  selector:
+    matchLabels:
+      app: fluentd
+  template:
+    metadata:
+      labels:
+        app: fluentd
+    spec:
+      serviceAccountName: fluentd
+      tolerations:
+        - key: dedicated
+          value: addon
+      initContainers:
+        - name: fluentd-install-plugins
+          image: public.ecr.aws/docker/library/fluentd:latest
+          securityContext:
+            runAsUser: 0
+          command:
+            - sh
+            - -c
+            - 'gem install fluent-plugin-cloudwatch-logs && cp /usr/lib/ruby/gems/* /usr/lib/ruby/gems.new -r'
+          volumeMounts:
+          - name: rubygem
+            mountPath: /usr/lib/ruby/gems.new
+      containers:
+      - name: fluentd
+        image: public.ecr.aws/docker/library/fluentd:latest
+        resources:
+          limits:
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+        volumeMounts:
+          - name: fluentbit
+            mountPath: /fluentd/etc/
+          - name: rubygem
+            mountPath: /usr/lib/ruby/gems
+      volumes:
+        - name: fluentbit
+          configMap:
+            name: fluentd-config
+        - name: rubygem
+          emptyDir: {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+data:
+  fluent.conf: |-
+    <source>
+      @type forward
+      port 24224
+      bind 0.0.0.0
+    </source>
+
+    <match **>
+      @type cloudwatch_logs
+      region ap-northeast-2
+      log_group_name /k8s/project-cluster/application
+      log_stream_name_key log_stream
+      auto_create_stream true
+      <web_identity_credentials>
+        role_arn "arn:aws:iam::648911607072:role/project-role-fluentd"
+        role_session_name "#{ENV['POD_NAME']}"
+        web_identity_token_file /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+      </web_identity_credentials>
+    </match>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluentd
+  namespace: default
+spec:
+  selector:
+    app: fluentd
+  type: ClusterIP
+  ports:
+  - name: fluentd
+    protocol: TCP
+    port: 24224
+    targetPort: 24224
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::648911607072:role/project-role-fluentd

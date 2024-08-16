@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  replicas: 64
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      tolerations:
+        - key: dedicated
+          value: app
+      initContainers:
+        - name: fluentbit
+          restartPolicy: Always
+          image: public.ecr.aws/aws-observability/aws-for-fluent-bit:stable
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: fluentbit
+              mountPath: /fluent-bit/etc/
+            - name: varlogcontainers
+              mountPath: /var/log/pods
+              readOnly: true
+      containers:
+      - name: myapp
+        image: ghcr.io/pmh-only/log-generator:latest
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+      volumes:
+        - name: fluentbit
+          configMap:
+            name: myapp-fluentbit-config
+        - name: varlogcontainers
+          hostPath:
+            path: /var/log/pods
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: myapp-fluentbit-config
+data:
+  fluent-bit.conf: |-
+    [SERVICE]
+      Parsers_File parsers.conf
+
+    [INPUT]
+      Name tail
+      Tag myapp.*
+      Path /var/log/pods/${POD_NAMESPACE}_${POD_NAME}_*/myapp/0.log
+
+    [FILTER]
+      Name parser
+      Match myapp.*
+      Key_Name log
+      Parser myapp-1
+
+    [FILTER]
+      Name parser
+      Match myapp.*
+      Key_Name log
+      Parser myapp-2
+    
+    [FILTER]
+      Name modify
+      Match myapp.*
+      Add log_stream myapp/${POD_NAME}
+
+    [OUTPUT]
+      Name forward
+      Match *
+      Host fluentd.default.svc.cluster.local
+      Port 24224
+
+  parsers.conf: |-
+    [PARSER]
+      Name myapp-1
+      Format regex
+      Regex ^.* .* .* (?<time>.* .*) (?<method>.*) (?<path>.*) "(?<user_agent>.*)" (?<response_code>[^ ]*) (?<response_size>[^ ]*) (?<latency>[^ ]*)$
+      Time_Key time
+      Time_Format %Y/%m/%d %H:%M:%S.%L
+      Time_Keep On
+
+    [PARSER]
+      Name myapp-2
+      Format regex
+      Regex ^.* .* .* (?<time>.* .*) (?<method>.*) (?<path>.*) "(?<user_agent>.*)" (?<response_code>[^ ]*) (?<request_size>[^ ]*) (?<response_size>[^ ]*) (?<latency>[^ ]*)$
+      Time_Key time
+      Time_Format %Y/%m/%d %H:%M:%S.%L
+      Time_Keep On

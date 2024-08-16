@@ -10,31 +10,27 @@ module "eks_blueprints_addons" {
   eks_addons = {
     aws-ebs-csi-driver = {
       most_recent = true
-      configuration_values = <<EOF
-        {
-          "controller": {
-            "tolerations": [{
-              "key": "dedicated",
-              "effect": "NoSchedule",
-              "operator": "Equal",
-              "value": "addon"
-            }]
-          }
+      configuration_values = jsonencode({
+        controller = {
+          tolerations = [{
+            effect   = "NoSchedule"
+            key      = "dedicated"
+            operator = "Equal"
+            value    = "addon"
+          }]
         }
-      EOF
+      })
     }
     coredns = {
       most_recent = true
-      configuration_values = <<EOF
-        {
-          "tolerations": [{
-            "key": "dedicated",
-            "effect": "NoSchedule",
-            "operator": "Equal",
-            "value": "addon"
-          }]
-        }
-      EOF
+      configuration_values = jsonencode({
+        tolerations = [{
+          effect   = "NoSchedule"
+          key      = "dedicated"
+          operator = "Equal"
+          value    = "addon"
+        }]
+      })
     }
     vpc-cni = {
       most_recent = true
@@ -46,6 +42,19 @@ module "eks_blueprints_addons" {
 
   enable_karpenter = true
   karpenter = {
+    values = [
+      <<EOF
+        tolerations:
+          - key: dedicated
+            operator: Equal
+            value: addon
+            effect: NoSchedule
+      EOF
+    ]
+  }
+  
+  enable_metrics_server = true
+  metrics_server = {
     values = [
       <<EOF
         tolerations:
