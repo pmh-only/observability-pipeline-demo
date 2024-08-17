@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  replicas: 12
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      tolerations:
+        - key: dedicated
+          value: app
+      containers:
+      - name: myapp
+        image: ghcr.io/pmh-only/log-generator:latest
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"

@@ -1,0 +1,188 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd
+  namespace: default
+  labels:
+    app: fluentd
+spec:
+  selector:
+    matchLabels:
+      app: fluentd
+  template:
+    metadata:
+      labels:
+        app: fluentd
+    spec:
+      serviceAccountName: fluentd
+      tolerations:
+        - operator: Exists
+      containers:
+      - name: fluentd
+        image: fluent/fluentd-kubernetes-daemonset:v1.17-debian-opensearch-1
+        env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name:  FLUENT_OPENSEARCH_HOST
+            value: "vpc-project-opensearch-4qxxqs6mmvpbvprig6lhd4i36m.ap-northeast-2.es.amazonaws.com"
+          - name:  FLUENT_OPENSEARCH_PORT
+            value: "443"
+          - name: FLUENT_OPENSEARCH_SCHEME
+            value: "https"
+          - name: FLUENT_OPENSEARCH_SSL_VERIFY
+            value: "false"
+          - name: FLUENT_OPENSEARCH_SSL_VERSION
+            value: "TLSv1_2"
+          - name: FLUENT_OPENSEARCH_USER
+            value: "example"
+          - name: FLUENT_OPENSEARCH_PASSWORD
+            value: "Barbarbarbar1!"
+          - name: FLUENT_OPENSEARCH_INDEX_NAME
+            value: 'fluentd.${tag}'
+          - name: FLUENT_CONTAINER_TAIL_PARSER_TYPE
+            value: "cri"
+          - name: FLUENT_CONTAINER_TAIL_PARSER_TIME_FORMAT
+            value: "%Y-%m-%dT%H:%M:%S.%N%:z"
+        resources:
+          limits:
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: containerlogdirectory
+          mountPath: /var/log/pods
+          readOnly: true
+        - name: fluentd-config
+          mountPath: /fluentd/etc/fluent.conf
+          subPath: fluent.conf
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: containerlogdirectory
+        hostPath:
+          path: /var/log/pods
+      - name: fluentd-config
+        configMap:
+          name: fluentd
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd
+data:
+  fluent.conf: |
+    @include "#{ENV['FLUENTD_SYSTEMD_CONF'] || 'systemd'}.conf"
+    @include "#{ENV['FLUENTD_PROMETHEUS_CONF'] || 'prometheus'}.conf"
+    @include kubernetes.conf
+    @include conf.d/*.conf
+
+    <source>
+      @type tail
+      path /var/log/pods/default_myapp-*/myapp/0.log
+      tag myapp.log
+      
+      <parse>
+        @type regexp
+        expression ^(?<log>.*)$
+      </parse>
+    </source>
+    
+    <filter myapp.log>
+      @type parser
+      key_name log
+      reserve_data true
+      emit_invalid_record_to_error false
+      <parse>
+        @type regexp
+        expression /^.* .* .* (?<time>.* .*) (?<method>.*) (?<path>.*) "(?<user_agent>.*)" (?<response_code>[^ ]*) (?<request_size>[^ ]*)kB (?<response_size>[^ ]*)kB (?<latency>[^ ]*)ms$/
+        types response_code:integer,request_size:integer,response_size:integer,latency:integer
+        time_format %Y/%m/%d %H:%M:%S.%L
+        time_key time
+        keep_time_key true
+      </parse>
+    </filter>
+
+    <filter myapp.log>
+      @type parser
+      key_name log
+      reserve_data true
+      reserve_time true
+      emit_invalid_record_to_error false
+      <parse>
+        @type regexp
+        expression /^.* .* .* (?<time>.* .*) (?<method>.*) (?<path>.*) "(?<user_agent>.*)" (?<response_code>[^ ]*) (?<response_size>[^ ]*)kB (?<latency>[^ ]*)ms$/
+        types response_code:integer,response_size:integer,latency:integer
+        time_format %Y/%m/%d %H:%M:%S.%L
+        time_key time
+        keep_time_key true
+      </parse>
+    </filter>
+
+    <match **>
+      @type opensearch
+      @id out_os
+      @log_level info
+      include_tag_key true
+      host "#{ENV['FLUENT_OPENSEARCH_HOST']}"
+      port "#{ENV['FLUENT_OPENSEARCH_PORT']}"
+      path "#{ENV['FLUENT_OPENSEARCH_PATH']}"
+      scheme "#{ENV['FLUENT_OPENSEARCH_SCHEME'] || 'http'}"
+      ssl_verify "#{ENV['FLUENT_OPENSEARCH_SSL_VERIFY'] || 'true'}"
+      ssl_version "#{ENV['FLUENT_OPENSEARCH_SSL_VERSION'] || 'TLSv1_2'}"
+      user "#{ENV['FLUENT_OPENSEARCH_USER']}"
+      password "#{ENV['FLUENT_OPENSEARCH_PASSWORD']}"
+      index_name "#{ENV['FLUENT_OPENSEARCH_INDEX_NAME'] || 'fluentd'}"
+      logstash_dateformat "#{ENV['FLUENT_OPENSEARCH_LOGSTASH_DATEFORMAT'] || '%Y.%m.%d'}"
+      logstash_format "#{ENV['FLUENT_OPENSEARCH_LOGSTASH_FORMAT'] || 'false'}"
+      logstash_prefix "#{ENV['FLUENT_OPENSEARCH_LOGSTASH_PREFIX'] || 'logstash'}"
+      logstash_prefix_separator "#{ENV['FLUENT_OPENSEARCH_LOGSTASH_PREFIX_SEPARATOR'] || '-'}"
+      <buffer>
+        flush_thread_count "#{ENV['FLUENT_OPENSEARCH_BUFFER_FLUSH_THREAD_COUNT'] || '1'}"
+        flush_mode "#{ENV['FLUENT_OPENSEARCH_BUFFER_FLUSH_MODE'] || 'interval'}"
+        flush_interval "#{ENV['FLUENT_OPENSEARCH_BUFFER_FLUSH_INTERVAL'] || '60s'}"
+        chunk_limit_size "#{ENV['FLUENT_OPENSEARCH_BUFFER_CHUNK_LIMIT_SIZE'] || '8M'}"
+        total_limit_size "#{ENV['FLUENT_OPENSEARCH_BUFFER_TOTAL_LIMIT_SIZE'] || '512M'}"
+        retry_max_interval "#{ENV['FLUENT_OPENSEARCH_BUFFER_RETRY_MAX_INTERVAL'] || '30'}"
+        retry_timeout "#{ENV['FLUENT_OPENSEARCH_BUFFER_RETRY_TIMEOUT'] || '72h'}"
+        retry_forever "#{ENV['FLUENT_OPENSEARCH_BUFFER_RETRY_FOREVER'] || 'false'}"
+      </buffer>
+    </match>
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluentd
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+# This cluster role binding allows anyone in the "manager" group to read secrets in any namespace.
+kind: ClusterRoleBinding
+metadata:
+  name: read-secrets-global
+subjects:
+- kind: ServiceAccount
+  name: fluentd
+  namespace: default
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: fluentd
+  apiGroup: rbac.authorization.k8s.io

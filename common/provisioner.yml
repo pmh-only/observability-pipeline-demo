@@ -79,7 +79,7 @@ spec:
   tags:
     Name: project-mng-app
   amiFamily: Bottlerocket
-  role: karpenter-project-cluster-20240815065857279300000005
+  role: karpenter-project-cluster-20240817014622524700000005
   subnetSelectorTerms:
     - tags:
         karpenter.sh/discovery: "project-cluster"
