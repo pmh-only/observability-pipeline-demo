@@ -17,26 +17,14 @@ func main() {
 
 	go func() {
 		for {
-			if method := random_method(); method == "POST" {
-				log.Printf("%s %s \"%s\" %d %dkB %dkB %dms\n",
-					method,
-					random_path(),
-					random_useragent(),
-					random_response_code(),
-					random_int_1000(), // request_body
-					random_int_1000(), // response_body
-					random_int_1000(), // latency
-				)
-			} else {
-				log.Printf("%s %s \"%s\" %d %dkB %dms\n",
-					method,
-					random_path(),
-					random_useragent(),
-					random_response_code(),
-					random_int_1000(), // response_body
-					random_int_1000(), // latency
-				)
-			}
+			log.Printf("%s %s \"%s\" %d %dkB %dms\n",
+				random_method(),
+				random_path(),
+				random_useragent(),
+				random_response_code(),
+				random_int_1000(), // response_body
+				random_int_1000(), // latency
+			)
 
 			time.Sleep(10 * time.Millisecond)
 		}
