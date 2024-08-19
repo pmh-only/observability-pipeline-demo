@@ -50,7 +50,7 @@ module "eks" {
       }
     }
     karpenter = {
-      principal_arn = "arn:aws:iam::${data.aws_caller_identity.caller.account_id}:role/karpenter-project-cluster-20240817014622524700000005"
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.caller.account_id}:role/karpenter-project-cluster-20240819023215316200000002"
       type = "EC2_LINUX"
     }
   }
