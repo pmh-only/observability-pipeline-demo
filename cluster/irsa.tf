@@ -66,6 +66,7 @@ module "irsa2" {
     cluster-oidc-provider = {
       provider_arn               = module.eks.oidc_provider_arn
       namespace_service_accounts = [
+        "opentelemetry-operator-system:adot-col-prom-metrics",
         "prometheus:amp-iamproxy-ingest-service-account"
       ]
     }

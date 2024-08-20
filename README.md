@@ -8,3 +8,6 @@
 
 ## prometheus(remote-write)-grafana
 [![](./prometheus(remote-write)-grafana/image.png)](./prometheus(remote-write)-grafana/)
+
+## adot-prometheus-grafana
+[![](./adot-prometheus-grafana/image.png)](./adot-prometheus-grafana/)

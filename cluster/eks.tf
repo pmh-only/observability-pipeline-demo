@@ -3,7 +3,7 @@ module "eks" {
   version = "~> 20.0"
 
   cluster_name    = "${var.project_name}-cluster"
-  cluster_version = "1.30"
+  cluster_version = "1.29"
 
   cluster_endpoint_public_access  = true
 
@@ -50,7 +50,7 @@ module "eks" {
       }
     }
     karpenter = {
-      principal_arn = "arn:aws:iam::${data.aws_caller_identity.caller.account_id}:role/karpenter-project-cluster-20240819023215316200000002"
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.caller.account_id}:role/karpenter-project-cluster-20240819140737338300000003"
       type = "EC2_LINUX"
     }
   }
