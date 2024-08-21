@@ -1,9 +1,9 @@
-name: Build images - xray-application
+name: Build images - otel-application
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'xray-application/**'
+      - 'otel-application/**'
 
 permissions:
   contents: write
@@ -34,7 +34,7 @@ jobs:
         with:
           push: true
           platforms: linux/arm64,linux/amd64
-          context: xray-application
-          tags: ghcr.io/pmh-only/xray-application
+          context: otel-application
+          tags: ghcr.io/pmh-only/otel-application
           cache-from: type=gha
           cache-to: type=gha,mode=max

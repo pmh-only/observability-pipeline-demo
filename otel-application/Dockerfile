@@ -14,7 +14,7 @@ COPY --chown=1000:1000 ./package-lock.json ./package.json ./
 
 RUN npm i
 
-COPY ./main.js ./
+COPY ./*.js ./
 
 ENTRYPOINT [ "/usr/bin/node" ]
 CMD [ "/app/main.js" ]
