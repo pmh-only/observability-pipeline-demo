@@ -13,8 +13,8 @@ const { detectResourcesSync } = require('@opentelemetry/resources')
 const { awsEc2Detector } = require('@opentelemetry/resource-detector-aws')
 const { ExpressInstrumentation } = require('@opentelemetry/instrumentation-express');
 
-// const { DiagConsoleLogger, DiagLogLevel, diag } = require('@opentelemetry/api');
-// diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
+const { DiagConsoleLogger, DiagLogLevel, diag } = require('@opentelemetry/api');
+diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
 const resource = detectResourcesSync({
    detectors: [awsEc2Detector],
