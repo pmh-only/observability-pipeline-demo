@@ -1,9 +1,18 @@
+const { STSClient, GetCallerIdentityCommand } = require("@aws-sdk/client-sts")
 const express = require('express')
 const app = express()
 
-app.get('/healthz', (req, res) => {
+const client = new STSClient({
+  region: 'ap-northeast-2'
+})
+
+app.get('/healthz', async (req, res) => {
+  const command = new GetCallerIdentityCommand({});
+  const data = await client.send(command);
+
   res.send({
-    success: true
+    success: true,
+    data
   })
 })
 
