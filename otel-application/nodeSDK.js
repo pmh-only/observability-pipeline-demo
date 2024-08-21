@@ -19,12 +19,9 @@ const { ExpressInstrumentation } = require('@opentelemetry/instrumentation-expre
 const resource = detectResourcesSync({
    detectors: [awsEc2Detector],
 })
-
-const tracerProvider = new NodeTracerProvider({resource });
-
 const _resource = Resource.default().merge(new Resource({
         [SEMRESATTRS_SERVICE_NAME]: "otel-application",
-    }));
+    })).merge(resource);
 const _traceExporter = new OTLPTraceExporter();
 const _spanProcessor = new BatchSpanProcessor(_traceExporter);
 const _tracerConfig = {
@@ -45,7 +42,7 @@ async function nodeSDKBuilder() {
         spanProcessor: _spanProcessor,
         traceExporter: _traceExporter,
     });
-    sdk.configureTracerProvider(_tracerConfig, _spanProcessor, tracerProvider);
+    sdk.configureTracerProvider(_tracerConfig, _spanProcessor);
 
     // this enables the API to record telemetry
     await sdk.start();
