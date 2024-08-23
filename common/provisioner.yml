@@ -5,6 +5,10 @@ metadata:
   namespace: karpenter
 spec:
   template:
+    metadata:
+      labels:
+        dedicated: app
+        on-demand: 'yes'
     spec:
       requirements:
         - key: capacity-spread
@@ -40,6 +44,9 @@ metadata:
   namespace: karpenter
 spec:
   template:
+    metadata:
+      labels:
+        dedicated: app
     spec:
       requirements:
         - key: capacity-spread
@@ -79,7 +86,7 @@ spec:
   tags:
     Name: project-mng-app
   amiFamily: Bottlerocket
-  role: karpenter-project-cluster-20240819140737338300000003
+  role: karpenter-project-cluster-20240822021414500100000004
   subnetSelectorTerms:
     - tags:
         karpenter.sh/discovery: "project-cluster"

@@ -23,11 +23,11 @@ module "eks" {
       min_size     = 3
       max_size     = 27
       desired_size = 3
-      taints = [{
-        key = "dedicated"
-        value = "addon"
-        effect = "NO_SCHEDULE"
-      }]
+      # taints = [{
+      #   key = "dedicated"
+      #   value = "addon"
+      #   effect = "NO_SCHEDULE"
+      # }]
     }
   }
 
@@ -50,7 +50,7 @@ module "eks" {
       }
     }
     karpenter = {
-      principal_arn = "arn:aws:iam::${data.aws_caller_identity.caller.account_id}:role/karpenter-project-cluster-20240819140737338300000003"
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.caller.account_id}:role/karpenter-project-cluster-20240822021414500100000004"
       type = "EC2_LINUX"
     }
   }

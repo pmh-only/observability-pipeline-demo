@@ -11,3 +11,6 @@
 
 ## adot-prometheus-grafana
 [![](./adot-prometheus-grafana/image.png)](./adot-prometheus-grafana/)
+
+## aws-observability-accelerator
+[![](./aws-observability-accelerator/image.png)](./aws-observability-accelerator/)

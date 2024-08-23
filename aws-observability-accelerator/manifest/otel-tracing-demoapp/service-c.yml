@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-service-c
+  namespace: otel-demo
+  labels:
+    app: otel-service-c
+spec:
+  selector:
+    matchLabels:
+      app: otel-service-c
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: otel-service-c
+    spec:
+      nodeSelector:
+        dedicated: app
+      tolerations:
+        - key: dedicated
+          value: app
+      containers:
+      - name: otel-service-c
+        image: ghcr.io/pmh-only/otel-tracing-demoapp:latest
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        livenessProbe:
+          tcpSocket:
+            port: 3000
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
+          successThreshold: 1
+          failureThreshold: 3
+          periodSeconds: 10
+        env:
+        - name: NODE_NAME
+          value: service-c
+        - name: NEXT_NODE
+          value: ''
+        - name: OTEL_SERVICE_NAME
+          value: service-c
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://adot-collector.adot-collector-kubeprometheus.svc:4317
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-service-c
+  namespace: otel-demo
+spec:
+  selector:
+    app: otel-service-c
+  type: ClusterIP
+  ports:
+  - name: otel-service-c
+    protocol: TCP
+    port: 3000
+    targetPort: 3000

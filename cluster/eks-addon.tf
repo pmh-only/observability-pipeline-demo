@@ -10,27 +10,9 @@ module "eks_blueprints_addons" {
   eks_addons = {
     aws-ebs-csi-driver = {
       most_recent = true
-      configuration_values = jsonencode({
-        controller = {
-          tolerations = [{
-            effect   = "NoSchedule"
-            key      = "dedicated"
-            operator = "Equal"
-            value    = "addon"
-          }]
-        }
-      })
     }
     coredns = {
       most_recent = true
-      configuration_values = jsonencode({
-        tolerations = [{
-          effect   = "NoSchedule"
-          key      = "dedicated"
-          operator = "Equal"
-          value    = "addon"
-        }]
-      })
     }
     vpc-cni = {
       most_recent = true
@@ -41,28 +23,18 @@ module "eks_blueprints_addons" {
   }
 
   enable_karpenter = true
-  karpenter = {
-    values = [
-      <<EOF
-        tolerations:
-          - key: dedicated
-            operator: Equal
-            value: addon
-            effect: NoSchedule
-      EOF
-    ]
-  }
-  
+  enable_cert_manager = true
   enable_metrics_server = true
-  metrics_server = {
-    values = [
-      <<EOF
-        tolerations:
-          - key: dedicated
-            operator: Equal
-            value: addon
-            effect: NoSchedule
-      EOF
+  enable_cluster_autoscaler = true
+  enable_bottlerocket_update_operator = true
+  enable_aws_load_balancer_controller = true
+  
+  aws_load_balancer_controller = {
+    set = [
+      {
+        name  = "vpcId"
+        value = module.vpc.vpc_id
+      }
     ]
   }
 }

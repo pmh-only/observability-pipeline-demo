@@ -9,8 +9,13 @@ module "vpc" {
   private_subnets = ["10.0.10.0/24", "10.0.11.0/24", "10.0.12.0/24"]
   intra_subnets = ["10.0.20.0/24", "10.0.21.0/24", "10.0.22.0/24"]
 
+  public_subnet_tags = {
+    "kubernetes.io/role/elb" = "1"
+  }
+
   private_subnet_tags = {
     "karpenter.sh/discovery" = "${var.project_name}-cluster"
+    "kubernetes.io/role/internal-elb" = "1"
   }
 
   public_subnet_names = ["${var.project_name}-subnet-public-a", "${var.project_name}-subnet-public-b", "${var.project_name}-subnet-public-c"]

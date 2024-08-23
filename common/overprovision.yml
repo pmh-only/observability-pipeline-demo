@@ -12,10 +12,19 @@ spec:
       labels:
         app: overprovision
     spec:
+      nodeSelector:
+        dedicated: app
       tolerations:
         - key: dedicated
           value: app
           effect: NoSchedule
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchLabels:
+                app: overprovision
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
