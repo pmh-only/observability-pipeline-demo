@@ -17,8 +17,8 @@ module "eks" {
 
   eks_managed_node_groups = {
     project-mng-addon = {
-      ami_type       = "BOTTLEROCKET_ARM_64"
-      instance_types = ["c6g.large"]
+      ami_type       = "BOTTLEROCKET_x86_64"
+      instance_types = ["c5.large"]
 
       min_size     = 3
       max_size     = 27
@@ -50,7 +50,7 @@ module "eks" {
       }
     }
     karpenter = {
-      principal_arn = "arn:aws:iam::${data.aws_caller_identity.caller.account_id}:role/karpenter-project-cluster-20240826113647415900000025"
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.caller.account_id}:role/karpenter-project-cluster-20240827024307095000000001"
       type = "EC2_LINUX"
     }
   }
